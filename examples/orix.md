@@ -6,4 +6,4 @@
 .
 
 
-Feature reading from usb key. Read fat32 native.
+Reading from usb key. Read fat32 native.

@@ -6,10 +6,10 @@
 + #cp from to
 
 ## DESCRIPTION
-Copy a file to another.
+Copy a file to another. Only 40KB can be copied. It's a software limit
 
 ## EXAMPLES
-+ vi install.sh
++ cp from.txt to.txt
 
 ## SOURCE
 located in Orix Kernel

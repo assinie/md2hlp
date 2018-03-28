@@ -6,7 +6,7 @@
 + #touch myfile
 
 ## DESCRIPTION
-Create an empty file. Time does not affedct the timstamp of the file.
+Create an empty file. Time does not affect the timstamp of the file.
 
 ## SOURCE
-https://github.com/oric-software/touch.git (C code)
+kernel internal command

@@ -12,4 +12,4 @@ rm file or directory
 + rm /myfolder
 
 ## SOURCE
-https://github.com/oric-software/rm.git
+kernel internal command

@@ -6,7 +6,7 @@
 + reboot
 
 ## DESCRIPTION
-Reboot the machine: it call NMI VECTORS and flush page 3
+Reboot the machine: it call NMI VECTORS and flush page 2 and page 0
 
 ## SOURCE
-Internale command in Oric (assembly)
+Internal command in Oric (assembly)

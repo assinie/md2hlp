@@ -3,7 +3,7 @@
 ### Display kernel info
 
 ## SYNOPSYS
-+ uname [-a
++ uname [-a]
 
 ## DESCRIPTION
 Display kernel info

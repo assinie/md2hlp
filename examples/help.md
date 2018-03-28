@@ -9,4 +9,4 @@
 Display all internal commands of Orix bank
 
 ## SOURCE
-Internal command in Orix (assembly)
+Internal command in Orix

@@ -1,12 +1,12 @@
-# Command: ioport
+# Command: ioports
 
 ### Display I/O Ports
 
 ## SYNOPSYS
-+ #ioport
++ #ioports
 
 ## DESCRIPTION
 Display I/O ports.
 
 ## SOURCE
-Src code in orix kernel
+internal command in orix kernel

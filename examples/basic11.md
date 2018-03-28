@@ -9,4 +9,4 @@
 This start the atmos rom, but this rom is special because it did not test RAM
 
 ## SOURCE
-Internale command in Oric (assembly)
+Internal command in Orix (assembly)

@@ -9,4 +9,4 @@
 Display a message
 
 ## SOURCE
-Available in Orix kernel (assembly)
+kernel Orix command
