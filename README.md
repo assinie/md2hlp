@@ -30,11 +30,11 @@ Convert from Markdown to Orix Help
 ## EXAMPLES
 md2hlp -f README.md -o help/md2hlp.hlp
 
-![](https://github.com/assinie/md2hlp/blob/master/img/md2hlp.png)
+![](/img/md2hlp.png)
 
 
 md2hlp -f examples/date.md -o help/date.hlp
-![](https://github.com/assinie/md2hlp/blob/master/img/date.png)
+![](/img/date.png)
 
 ---
 
