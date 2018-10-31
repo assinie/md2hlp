@@ -5,8 +5,8 @@
 #
 # $Id: md2hlp.py $
 # $Author: assinie <github@assinie.info> $
-# $Date: 2018-03-20 $
-# $Revision: 0.1 $
+# $Date: 2018-10-30 $
+# $Revision: 0.2 $
 #
 # ------------------------------------------------------------------------------
 
@@ -20,16 +20,19 @@ import ConfigParser
 import re
 import textwrap
 
+from pprint import pprint
+
 # ------------------------------------------------------------------------------
 __program_name__ = 'md2hlp'
 __description__ = "Convert from Markdown to Orix Help"
 __plugin_type__ = 'TOOL'
-__version__ = '0.1'
+__version__ = '0.2'
 
 # ------------------------------------------------------------------------------
 heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
 
 list_bullet = re.compile(r'^ *(?:[*+-]|\d+\.) +')
+link = re.compile(r'\[([^\]]+)]\(([^)]+)\)')
 
 repls = list()
 for i in range(27):
@@ -97,6 +100,16 @@ class md2hlp():
             while line:
                 line = line.strip(' \n')
                 # print line, len(line)
+
+                pos = 1
+                l = link.search(line,pos)
+                while l:
+                    if self.verbose > 1:
+                        eprint('Found link', l.groups(), l.span(2) )
+
+                    line = line[:l.start(0)].strip(' ') + '^D' + l.group(1) + '^G' + line[l.end(0):].strip(' ')
+                    pos = l.start(0) + len(l.group(1))
+                    l = link.search(line,pos)
 
                 h = heading.match(line)
                 l = list_bullet.match(line)
@@ -202,7 +215,7 @@ def main():
 
     parser = argparse.ArgumentParser(prog=__program_name__, description=__description__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--config', '-c', required=False, type=str, default='%s.cfg' % __program_name__, help='Configuration filename')
+    parser.add_argument('--config', '-c', required=False, type=str, default=None, help='Configuration filename')
     parser.add_argument('--file', '-f', required=False, type=str, default=None, help='Input filename')
     parser.add_argument('--output', '-o', required=False, type=str, default=None, help='output filename')
     parser.add_argument('--verbose', '-v', action='count', default=0, help='increase verbosity')
@@ -210,9 +223,26 @@ def main():
 
     args = parser.parse_args()
 
-    if not os.path.isfile(args.config):
-        eprint("Configuration file '%s' not found" % args.config)
-        sys.exit(1)
+    env_var = os.environ.get(__program_name__.upper() + '_PATH')
+
+    if args.config is not None:
+        if not os.path.isfile(args.config):
+            eprint("Configuration file '%s' not found" % args.config)
+            sys.exit(1)
+    else:
+        if not os.path.isfile(__program_name__ + '.cfg'):
+            if env_var is not None:
+                if not os.path.isfile('%s/%s.cfg' % (env_var, __program_name__)):
+                    eprint("Configuration file '%s' not found" % args.config)
+                    sys.exit(1)
+                else:
+                    args.config = '%s/%s.cfg' % (env_var, __program_name__)
+            else:
+                eprint("Configuration file '%s.cfg' not found" % __program_name__)
+                sys.exit(1)
+        else:
+            args.config = '%s.cfg' % (__program_name__)
+
 
     if args.file is not None:
         if not os.path.isfile(args.file):
