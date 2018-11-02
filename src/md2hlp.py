@@ -5,8 +5,8 @@
 #
 # $Id: md2hlp.py $
 # $Author: assinie <github@assinie.info> $
-# $Date: 2018-10-30 $
-# $Revision: 0.2 $
+# $Date: 2018-11-02 $
+# $Revision: 0.3 $
 #
 # ------------------------------------------------------------------------------
 
@@ -26,17 +26,33 @@ from pprint import pprint
 __program_name__ = 'md2hlp'
 __description__ = "Convert from Markdown to Orix Help"
 __plugin_type__ = 'TOOL'
-__version__ = '0.2'
+__version__ = '0.3'
 
 # ------------------------------------------------------------------------------
 heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
 
 list_bullet = re.compile(r'^ *(?:[*+-]|\d+\.) +')
+
 link = re.compile(r'\[([^\]]+)]\(([^)]+)\)')
+italic = re.compile(r'\*([^ ][^\*]+)\*')
+bold = re.compile(r'\*\*([^ ][^\*]+)\*\*')
+underline = re.compile(r'__([^ ][^_]+)__')
+strike_through = re.compile(r'~~([^_]+)~~')
+quote = re.compile(r'`([^ ][^`]+)`')
+
+inverse_style = re.compile(r'\^v([^ ][^\^]+)\^v')
+
+styles = { 'link': link, 'bold': bold, 'italic': italic, 'underline': underline,
+        'strike_through': strike_through, 'quote': quote}
+
 
 repls = list()
 for i in range(27):
     repls.append(('^' + chr(64 + i), chr(i)))
+
+inverse_char = list()
+for i in range(32,125):
+    inverse_char.append((chr(i), chr(i+128)))
 
 
 # ------------------------------------------------------------------------------
@@ -101,15 +117,38 @@ class md2hlp():
                 line = line.strip(' \n')
                 # print line, len(line)
 
-                pos = 1
-                l = link.search(line,pos)
+                for style in styles.keys():
+                    if self.config.has_option('DEFAULT', style):
+                        (style_start, style_stop) = self.config.get('DEFAULT', style).split(',')
+                    else:
+                        style_start = ''
+                        style_stop = ''
+
+                    pos = 0
+                    l = styles[style].search(line,pos)
+                    while l:
+                        if self.verbose > 1:
+                            eprint('Found '+style, l.groups(), l.span(2) )
+
+                        if '^v' not in style_start:
+                            line = line[:l.start(0)].strip(' ') + style_start + l.group(1) + style_stop + line[l.end(0):].strip(' ')
+                        else:
+                            line = line[:l.start(0)] + style_start + l.group(1) + style_stop + line[l.end(0):]
+
+                        pos = l.start(0) + len(l.group(1))
+                        l = styles[style].search(line,pos)
+
+                pos = 0
+                l = inverse_style.search(line,pos)
                 while l:
                     if self.verbose > 1:
-                        eprint('Found link', l.groups(), l.span(2) )
+                        eprint('Found inverse', l.groups(), l.span(2) )
 
-                    line = line[:l.start(0)].strip(' ') + '^D' + l.group(1) + '^G' + line[l.end(0):].strip(' ')
+                    inverse = subsequent = reduce(lambda a, kv: a.replace(*kv), inverse_char, l.group(1))
+
+                    line = line[:l.start(0)] + inverse + line[l.end(0):]
                     pos = l.start(0) + len(l.group(1))
-                    l = link.search(line,pos)
+                    l = inverse_style.search(line,pos)
 
                 h = heading.match(line)
                 l = list_bullet.match(line)
