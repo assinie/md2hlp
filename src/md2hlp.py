@@ -125,7 +125,7 @@ class md2hlp():
             line = fd.readline()
 
             while line:
-                line = line.strip(' \n')
+                line = line.strip(' \n\r')
                 # line = line.strip('\n')
 
                 if self.verbose > 1:
@@ -146,9 +146,9 @@ class md2hlp():
 
                     line = ''
 
-                for style in styles.keys():
-                    if self.config.has_option(head, style):
-                        (style_start, style_stop) = self.config.get(head, style).split(',')
+                for style_name in styles.keys():
+                    if self.config.has_option(head, style_name):
+                        (style_start, style_stop) = self.config.get(head, style_name).split(',')
 
                         style_start = style_start.replace('_', ' ')
                         if style_start and style_start[0] in ['"', "'"]:
@@ -163,14 +163,14 @@ class md2hlp():
                         style_stop = ''
 
                     pos = 0
-                    l = styles[style].search(line, pos)
+                    l = styles[style_name].search(line, pos)
                     while l:
                         if self.verbose > 1:
-                            eprint('Found '+style, l.groups(), l.span(1))
+                            eprint('Found '+style_name, l.groups(), l.span(1))
                             eprint('style_start: ', style_start, ', style_stop: ', style_stop, 'cite_start: ', cite_start)
 
                         if l.start(0) == 0 or (l.start(0) > 0 and line[l.start(0)-1] != "\\"):
-                            if style == 'cite' and cite_start:
+                            if style_name == 'cite' and cite_start:
                                 line = line[:l.start(0)] + l.group(1) + line[l.end(0):]
 
                             else:
@@ -182,7 +182,7 @@ class md2hlp():
                                 else:
                                     line = line[:l.start(0)] + style_start + l.group(1) + style_stop + line[l.end(0):]
 
-                            if style == 'cite':
+                            if style_name == 'cite':
                                 cite_start = style_start
 
                             pos = l.start(0) + len(l.group(1))
@@ -190,7 +190,7 @@ class md2hlp():
                         else:
                             pos = l.start(0)+1
 
-                        l = styles[style].search(line, pos)
+                        l = styles[style_name].search(line, pos)
 
                 pos = 0
                 l = inverse_style.search(line, pos)
