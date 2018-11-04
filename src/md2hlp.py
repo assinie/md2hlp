@@ -38,12 +38,17 @@ italic = re.compile(r'\*([^ ][^\*]+)\*')
 bold = re.compile(r'\*\*([^ ][^\*]+)\*\*')
 underline = re.compile(r'__([^ ][^_]+)__')
 strike_through = re.compile(r'~~([^_]+)~~')
-quote = re.compile(r'`([^ ][^`]+)`')
+quote = re.compile(r'` *([^`]+) *`')
 
-inverse_style = re.compile(r'\^v([^ ][^\^]+)\^v')
+cite = re.compile(r'^ {,3}> (.+)')
+quote_block = re.compile(r'^```')
+
+# inverse_style = re.compile(r'\^v([^ ][^\^]+)\^v')
+#inverse_style = re.compile(r'\^v(.+)\^v')
+inverse_style = re.compile(r'\^v(((?!\^v).)+)\^v')
 
 styles = { 'link': link, 'bold': bold, 'italic': italic, 'underline': underline,
-        'strike_through': strike_through, 'quote': quote}
+        'strike_through': strike_through, 'quote': quote, 'cite': cite }
 
 
 repls = list()
@@ -54,6 +59,9 @@ inverse_char = list()
 for i in range(32,125):
     inverse_char.append((chr(i), chr(i+128)))
 
+escape_chars = list()
+for i in "\\`*_{}[]()#+-.!~^":
+    escape_chars.append(('\\' + i, i))
 
 # ------------------------------------------------------------------------------
 def eprint(*args, **kwargs):
@@ -72,14 +80,16 @@ def lineWrap(line, initial='      ', subsequent='  ', break_on_hyphens=True):
         subsequent = subsequent[1:-1]
 
     line = reduce(lambda a, kv: a.replace(*kv), repls, line)
+    line = reduce(lambda a, kv: a.replace(*kv), escape_chars, line)
     initial = reduce(lambda a, kv: a.replace(*kv), repls, initial)
     subsequent = reduce(lambda a, kv: a.replace(*kv), repls, subsequent)
 
-    line = textwrap.wrap(line,
+    line = textwrap.wrap(re.sub(r' +', ' ', line),
                          width=40,
                          initial_indent=initial,
                          subsequent_indent=subsequent,
                          break_on_hyphens=break_on_hyphens,
+                         # expand_tabs=False,
                          replace_whitespace=False)
 
     for i in range(len(line)):
@@ -104,6 +114,8 @@ class md2hlp():
         paragraph = ''
         first = True
         output = ''
+        cite_start = ''
+        quote_block_found = False
 
         if self.mdfile is not None:
             fd = open(self.mdfile)
@@ -115,11 +127,35 @@ class md2hlp():
 
             while line:
                 line = line.strip(' \n')
-                # print line, len(line)
+                # line = line.strip('\n')
+
+                if self.verbose > 1:
+                    eprint(line)
+
+                if quote_block.search(line):
+                    if self.verbose > 1:
+                        eprint('Quote bloc found')
+
+                    if quote_block_found:
+                        quote_block_found = False
+                    else:
+                        quote_block_found = True
+
+                    line = ''
+
 
                 for style in styles.keys():
                     if self.config.has_option('DEFAULT', style):
                         (style_start, style_stop) = self.config.get('DEFAULT', style).split(',')
+
+                        style_start = style_start.replace('_', ' ')
+                        if style_start and style_start[0] in ['"', "'"]:
+                            style_start = style_start[1:-1]
+
+                        style_stop = style_stop.replace('_', ' ')
+                        if style_stop and style_stop[0] in ['"', "'"]:
+                            style_stop = style_stop[1:-1]
+
                     else:
                         style_start = ''
                         style_stop = ''
@@ -128,26 +164,47 @@ class md2hlp():
                     l = styles[style].search(line,pos)
                     while l:
                         if self.verbose > 1:
-                            eprint('Found '+style, l.groups(), l.span(2) )
+                            eprint('Found '+style, l.groups(), l.span(1) )
+                            eprint('style_start: ',style_start,', style_stop: ', style_stop, 'cite_start: ', cite_start)
 
-                        if '^v' not in style_start:
-                            line = line[:l.start(0)].strip(' ') + style_start + l.group(1) + style_stop + line[l.end(0):].strip(' ')
+                        if l.start(0) == 0 or (l.start(0) > 0 and line[l.start(0)-1] != "\\"):
+                            if style == 'cite' and cite_start:
+                                line = line[:l.start(0)] + l.group(1) + line[l.end(0):]
+
+                            else:
+                                if '^v' not in style_start:
+                                    # On suppose qu'il y a un caractère de contrôle donc on supprime tous les espaces
+                                    # avant et après le style puisqu'il sera remplacé par le caractère de contrôle.
+                                    # Sinon il ne faudrait pas faire ce test et ne conserver que la ligne du "else:"
+                                    line = line[:l.start(0)].strip(' ') + style_start + l.group(1) + style_stop + line[l.end(0):].strip(' ')
+                                else:
+                                    line = line[:l.start(0)] + style_start + l.group(1) + style_stop + line[l.end(0):]
+
+                            if style == 'cite':
+                                cite_start = style_start
+
+                            pos = l.start(0) + len(l.group(1))
+
                         else:
-                            line = line[:l.start(0)] + style_start + l.group(1) + style_stop + line[l.end(0):]
+                            pos = l.start(0)+1
 
-                        pos = l.start(0) + len(l.group(1))
                         l = styles[style].search(line,pos)
+
 
                 pos = 0
                 l = inverse_style.search(line,pos)
                 while l:
                     if self.verbose > 1:
-                        eprint('Found inverse', l.groups(), l.span(2) )
+                        eprint('Found inverse', l.groups(), l.span(1) )
 
-                    inverse = subsequent = reduce(lambda a, kv: a.replace(*kv), inverse_char, l.group(1))
+                    if l.start(0) ==0 or (l.start(0) > 0 and line[l.start(0)-1] != "\\"):
+                        inverse = reduce(lambda a, kv: a.replace(*kv), inverse_char, l.group(1))
 
-                    line = line[:l.start(0)] + inverse + line[l.end(0):]
-                    pos = l.start(0) + len(l.group(1))
+                        line = line[:l.start(0)] + inverse + line[l.end(0):]
+                        pos = l.start(0) + len(l.group(1))
+                    else:
+                            pos = l.start(0)+1
+
                     l = inverse_style.search(line,pos)
 
                 h = heading.match(line)
@@ -156,18 +213,20 @@ class md2hlp():
                 if not line and paragraph:
                     output += lineWrap(paragraph,
                                        initial=self.config.get(head, 'initial indent'),
-                                       subsequent=self.config.get(head, 'subsequent indent'),
+                                       subsequent=self.config.get(head, 'subsequent indent')+cite_start,
                                        break_on_hyphens=self.config.getboolean(head, 'break on hyphens'))
                     output += ' ' * 40
                     paragraph = ''
                     first = True
+                    cite_start = ''
 
                 if (h or l) and paragraph:
                     output += lineWrap(paragraph,
                                        initial=self.config.get(head, 'initial indent'),
-                                       subsequent=self.config.get(head, 'subsequent indent'),
+                                       subsequent=self.config.get(head, 'subsequent indent')+cite_start,
                                        break_on_hyphens=self.config.getboolean(head, 'break on hyphens'))
                     paragraph = ''
+                    cite_start = ''
 
                 if h:
                     level = len(h.group(1))
@@ -208,7 +267,7 @@ class md2hlp():
                     # Ligne a afficher
                     line = lineWrap(h.group(2),
                                     initial=initial,
-                                    subsequent='')
+                                    subsequent=''+cite_start)
 
                     output += line
 
@@ -224,22 +283,41 @@ class md2hlp():
 
                     output += lineWrap(line[l.end(0):],
                                        initial=self.config.get(head, 'initial indent') + self.config.get(head, 'list'),
-                                       subsequent='')
+                                       subsequent='' + cite_start)
 
                     first = False
+                    cite_start = ''
 
                 else:
                     if paragraph:
                         paragraph = paragraph + ' ' + line
                     else:
-                        paragraph = line
+                        if quote_block_found:
+                            if not self.config.has_option(head, 'quote block'):
+                                if not self.config.has_option('DEFAULT', 'quote block'):
+                                    initial = ''
+                                    subsequent = ''
+                                else:
+                                    initial = self.config.get('DEFAULT', 'quote block')
+                                    subsequent = initial
+                            else:
+                                initial = self.config.get(head, 'quote block')
+                                subsequent = initial
+
+                            output += lineWrap(line,
+                                        initial = initial,
+                                        subsequent = initial,
+                                        break_on_hyphens=self.config.getboolean(head, 'break on hyphens'))
+
+                        else:
+                            paragraph = line
 
                 line = fd.readline()
 
             if paragraph:
                 output += lineWrap(paragraph,
                                    initial=self.config.get(head, 'initial indent'),
-                                   subsequent=self.config.get(head, 'subsequent indent'),
+                                   subsequent=self.config.get(head, 'subsequent indent')+cite_start,
                                    break_on_hyphens=self.config.getboolean(head, 'break on hyphens'))
 
         else:
