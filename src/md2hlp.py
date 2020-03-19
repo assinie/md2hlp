@@ -163,53 +163,53 @@ class md2hlp():
                         style_stop = ''
 
                     pos = 0
-                    l = styles[style_name].search(line, pos)
-                    while l:
+                    block = styles[style_name].search(line, pos)
+                    while block:
                         if self.verbose > 1:
-                            eprint('Found '+style_name, l.groups(), l.span(1))
+                            eprint('Found '+style_name, block.groups(), block.span(1))
                             eprint('style_start: ', style_start, ', style_stop: ', style_stop, 'cite_start: ', cite_start)
 
-                        if l.start(0) == 0 or (l.start(0) > 0 and line[l.start(0)-1] != "\\"):
+                        if block.start(0) == 0 or (block.start(0) > 0 and line[block.start(0)-1] != "\\"):
                             if style_name == 'cite' and cite_start:
-                                line = line[:l.start(0)] + l.group(1) + line[l.end(0):]
+                                line = line[:block.start(0)] + block.group(1) + line[block.end(0):]
 
                             else:
                                 if '^v' not in style_start:
                                     # On suppose qu'il y a un caractère de contrôle donc on supprime tous les espaces
                                     # avant et après le style puisqu'il sera remplacé par le caractère de contrôle.
                                     # Sinon il ne faudrait pas faire ce test et ne conserver que la ligne du "else:"
-                                    line = line[:l.start(0)].strip(' ') + style_start + l.group(1) + style_stop + line[l.end(0):].strip(' ')
+                                    line = line[:block.start(0)].strip(' ') + style_start + block.group(1) + style_stop + line[block.end(0):].strip(' ')
                                 else:
-                                    line = line[:l.start(0)] + style_start + l.group(1) + style_stop + line[l.end(0):]
+                                    line = line[:block.start(0)] + style_start + block.group(1) + style_stop + line[block.end(0):]
 
                             if style_name == 'cite':
                                 cite_start = style_start
 
-                            pos = l.start(0) + len(l.group(1))
+                            pos = block.start(0) + len(block.group(1))
 
                         else:
-                            pos = l.start(0)+1
+                            pos = block.start(0)+1
 
-                        l = styles[style_name].search(line, pos)
+                        block = styles[style_name].search(line, pos)
 
                 pos = 0
-                l = inverse_style.search(line, pos)
-                while l:
+                block = inverse_style.search(line, pos)
+                while block:
                     if self.verbose > 1:
-                        eprint('Found inverse', l.groups(), l.span(1))
+                        eprint('Found inverse', block.groups(), block.span(1))
 
-                    if l.start(0) == 0 or (l.start(0) > 0 and line[l.start(0)-1] != "\\"):
-                        inverse = reduce(lambda a, kv: a.replace(*kv), inverse_char, l.group(1))
+                    if block.start(0) == 0 or (block.start(0) > 0 and line[block.start(0)-1] != "\\"):
+                        inverse = reduce(lambda a, kv: a.replace(*kv), inverse_char, block.group(1))
 
-                        line = line[:l.start(0)] + inverse + line[l.end(0):]
-                        pos = l.start(0) + len(l.group(1))
+                        line = line[:block.start(0)] + inverse + line[block.end(0):]
+                        pos = block.start(0) + len(block.group(1))
                     else:
-                            pos = l.start(0)+1
+                            pos = block.start(0)+1
 
-                    l = inverse_style.search(line, pos)
+                    block = inverse_style.search(line, pos)
 
                 h = heading.match(line)
-                l = list_bullet.match(line)
+                liste = list_bullet.match(line)
 
                 if not line and paragraph:
                     output += lineWrap(paragraph,
@@ -221,7 +221,7 @@ class md2hlp():
                     first = True
                     cite_start = ''
 
-                if (h or l) and paragraph:
+                if (h or liste) and paragraph:
                     output += lineWrap(paragraph,
                                        initial=self.config.get(head, 'initial indent'),
                                        subsequent=self.config.get(head, 'subsequent indent')+cite_start,
@@ -258,12 +258,12 @@ class md2hlp():
                     # Alignement
                     initial = self.config.get(head, 'head')
                     if self.config.get(head, 'align') == '^':
-                        l = (40 - len(h.group(2)) - len(self.config.get(head, 'head'))) / 2
-                        initial = ' ' * l + initial
+                        length = (40 - len(h.group(2)) - len(self.config.get(head, 'head'))) / 2
+                        initial = ' ' * length + initial
 
                     elif self.config.get(head, 'align') == '>':
-                        l = 40 - len(h.group(2)) - len(self.config.get(head, 'head'))
-                        initial = ' ' * l + initial
+                        length = 40 - len(h.group(2)) - len(self.config.get(head, 'head'))
+                        initial = ' ' * length + initial
 
                     # Ligne a afficher
                     line = lineWrap(h.group(2),
@@ -278,11 +278,11 @@ class md2hlp():
 
                     first = False
 
-                elif l:
+                elif liste:
                     if self.verbose > 1:
-                        eprint('Found list', l.group(), l.span(0), line[l.end(0):])
+                        eprint('Found list', liste.group(), liste.span(0), line[liste.end(0):])
 
-                    output += lineWrap(line[l.end(0):],
+                    output += lineWrap(line[liste.end(0):],
                                        initial=self.config.get(head, 'initial indent') + self.config.get(head, 'list'),
                                        subsequent='' + cite_start)
 
