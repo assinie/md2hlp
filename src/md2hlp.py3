@@ -373,7 +373,7 @@ def main():
     if args.output is None:
         print(hlpfile)
     else:
-        with open(args.output, 'wb') as fd:
+        with open(args.output, 'w') as fd:
             fd.write(hlpfile)
 
 
