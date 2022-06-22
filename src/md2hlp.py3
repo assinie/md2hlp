@@ -130,6 +130,10 @@ class md2hlp():
                 if self.verbose > 1:
                     eprint(line)
 
+                if line == '\\':
+                    output += ' ' * 40
+                    line = ''
+
                 if quote_block.search(line):
                     if self.verbose > 1:
                         eprint('Quote bloc found')
