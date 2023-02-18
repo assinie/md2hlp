@@ -68,7 +68,7 @@ def eprint(*args, **kwargs):
 
 
 # ------------------------------------------------------------------------------
-def lineWrap(line, initial='      ', subsequent='  ', break_on_hyphens=True):
+def lineWrap(line, initial='      ', subsequent='  ', break_on_hyphens=True, keep_spaces=False):
 
     initial = initial.replace('_', ' ')
     if initial and initial[0] in ['"', "'"]:
@@ -83,7 +83,10 @@ def lineWrap(line, initial='      ', subsequent='  ', break_on_hyphens=True):
     initial = reduce(lambda a, kv: a.replace(*kv), repls, initial)
     subsequent = reduce(lambda a, kv: a.replace(*kv), repls, subsequent)
 
-    line = textwrap.wrap(re.sub(r' +', ' ', line),
+    if not keep_spaces:
+        line = re.sub(r' +', ' ', line)
+
+    line = textwrap.wrap(line,
                          width=40,
                          initial_indent=initial,
                          subsequent_indent=subsequent,
@@ -125,8 +128,13 @@ class md2hlp():
             line = fd.readline()
 
             while line:
-                line = line.strip(' \n\r')
-                # line = line.strip('\n')
+                if quote_block_found:
+                    # Supprime les "espaces" uniquement en fin de ligne
+                    line = line.rstrip(' \n\r')
+
+                else:
+                    # Supprime les "espaces" et début et à la fin de la ligne
+                    line = line.strip(' \n\r')
 
                 if self.verbose > 1:
                     eprint(line)
@@ -308,7 +316,8 @@ class md2hlp():
                             output += lineWrap(line,
                                                initial=initial,
                                                subsequent=initial,
-                                               break_on_hyphens=self.config.getboolean(head, 'break on hyphens'))
+                                               break_on_hyphens=self.config.getboolean(head, 'break on hyphens'),
+                                               keep_spaces=True)
 
                         else:
                             paragraph = line
