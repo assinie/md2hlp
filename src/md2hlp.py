@@ -5,8 +5,8 @@
 #
 # $Id: md2hlp.py $
 # $Author: assinie <github@assinie.info> $
-# $Date: 2018-11-02 $
-# $Revision: 0.3 $
+# $Date: 2023-08-31 $
+# $Revision: 0.4 $
 #
 # ------------------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ from pprint import pprint
 __program_name__ = 'md2hlp'
 __description__ = "Convert from Markdown to Orix Help"
 __plugin_type__ = 'TOOL'
-__version__ = '0.3'
+__version__ = '0.4'
 
 # ------------------------------------------------------------------------------
 heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
