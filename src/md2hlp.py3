@@ -33,10 +33,10 @@ heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
 list_bullet = re.compile(r'^ *(?:[*+-]|\d+\.) +')
 
 link = re.compile(r'\[([^\]]+)]\(([^)]+)\)')
-italic = re.compile(r'\*([^ ][^\*]+)\*')
-bold = re.compile(r'\*\*([^ ][^\*]+)\*\*')
-underline = re.compile(r'__([^ ][^_]+)__')
-strike_through = re.compile(r'~~([^_]+)~~')
+italic = re.compile(r'\*((?! ).+?)(?<=[^ *])\*')
+bold = re.compile(r'\*\*((?! ).+?)(?<=[^ *])\*\*')
+underline = re.compile(r'__((?! ).+?)(?<=[^ _])__')
+strike_through = re.compile(r'~~((?! ).+?)(?<=[^ ~])~~')
 quote = re.compile(r'` *([^`]+) *`')
 
 cite = re.compile(r'^ {,3}> (.+)')
@@ -182,7 +182,11 @@ class md2hlp():
 
                         if block.start(0) == 0 or (block.start(0) > 0 and line[block.start(0)-1] != "\\"):
                             if style_name == 'cite' and cite_start:
-                                line = line[:block.start(0)] + block.group(1) + line[block.end(0):]
+                                eprint("[** "+paragraph)
+                                line = lineWrap(block.group(1), initial=cite_start, subsequent=cite_start, keep_spaces=True)
+                                # line = line[:block.start(0)].strip(' ') + style_start + block.group(1) + style_stop + line[block.end(0):].strip(' ')
+                                # line = line[:block.start(0)] + block.group(1) + line[block.end(0):]
+                                eprint("**] "+line)
 
                             else:
                                 if '^v' not in style_start:
@@ -386,8 +390,8 @@ def main():
     if args.output is None:
         print(hlpfile)
     else:
-        with open(args.output, 'w') as fd:
-            fd.write(hlpfile)
+        with open(args.output, 'wb') as fd:
+            fd.write(hlpfile.encode(encoding='latin-1'))
 
 
 # ------------------------------------------------------------------------------
