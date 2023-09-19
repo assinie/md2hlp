@@ -5,8 +5,8 @@
 #
 # $Id: md2hlp.py $
 # $Author: assinie <github@assinie.info> $
-# $Date: 2023-08-31 $
-# $Revision: 0.4 $
+# $Date: 2023-09-19 $
+# $Revision: 0.5 $
 #
 # ------------------------------------------------------------------------------
 import os
@@ -25,13 +25,14 @@ from configparser import ConfigParser
 __program_name__ = 'md2hlp'
 __description__ = "Convert from Markdown to Orix Help"
 __plugin_type__ = 'TOOL'
-__version__ = '0.4'
+__version__ = '0.5'
 
 # ------------------------------------------------------------------------------
 heading = re.compile(r'^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)')
 
 list_bullet = re.compile(r'^ *(?:[*+-]|\d+\.) +')
 
+image = re.compile(r'!\[([^\]]+)]\(([^)]+)\)')
 link = re.compile(r'\[([^\]]+)]\(([^)]+)\)')
 italic = re.compile(r'\*((?! ).+?)(?<=[^ *])\*')
 bold = re.compile(r'\*\*((?! ).+?)(?<=[^ *])\*\*')
@@ -44,9 +45,9 @@ quote_block = re.compile(r'^```')
 
 inverse_style = re.compile(r'\^v(((?!\^v).)+)\^v')
 
-styles = {'link': link, 'bold': bold, 'italic': italic, 'underline': underline,
-          'strike_through': strike_through, 'quote': quote, 'cite': cite}
-
+styles = {'image': image, 'link': link, 'bold': bold, 'italic': italic,
+           'underline': underline,'strike_through': strike_through,
+           'quote': quote, 'cite': cite}
 
 repls = list()
 for i in range(27):
@@ -158,20 +159,26 @@ class md2hlp():
                     line = ''
 
                 for style_name in list(styles.keys()):
+                    style_start = ''
+                    style_stop = ''
+
                     if self.config.has_option(head, style_name):
-                        (style_start, style_stop) = self.config.get(head, style_name).split(',')
+                        style_start = self.config.get(head, style_name)
 
-                        style_start = style_start.replace('_', ' ')
-                        if style_start and style_start[0] in ['"', "'"]:
-                            style_start = style_start[1:-1]
+                        if style_start.lower() != 'none':
+                            if ',' in style_start:
+                                (style_start, style_stop) = style_start.split(',')
 
-                        style_stop = style_stop.replace('_', ' ')
-                        if style_stop and style_stop[0] in ['"', "'"]:
-                            style_stop = style_stop[1:-1]
+                            style_start = style_start.replace('_', ' ')
+                            if style_start and style_start[0] in ['"', "'"]:
+                                style_start = style_start[1:-1]
 
-                    else:
-                        style_start = ''
-                        style_stop = ''
+                            style_stop = style_stop.replace('_', ' ')
+                            if style_stop and style_stop[0] in ['"', "'"]:
+                                style_stop = style_stop[1:-1]
+
+                        else:
+                            style_start = style_stop = None
 
                     pos = 0
                     block = styles[style_name].search(line, pos)
@@ -189,18 +196,23 @@ class md2hlp():
                                 eprint("**] "+line)
 
                             else:
-                                if '^v' not in style_start:
-                                    # On suppose qu'il y a un caractère de contrôle donc on supprime tous les espaces
-                                    # avant et après le style puisqu'il sera remplacé par le caractère de contrôle.
-                                    # Sinon il ne faudrait pas faire ce test et ne conserver que la ligne du "else:"
-                                    line = line[:block.start(0)].strip(' ') + style_start + block.group(1) + style_stop + line[block.end(0):].strip(' ')
+                                if style_start is None:
+                                    line = line[:block.start(0)] + line[block.end(0):]
+
                                 else:
-                                    line = line[:block.start(0)] + style_start + block.group(1) + style_stop + line[block.end(0):]
+                                    if '^v' not in style_start:
+                                        # On suppose qu'il y a un caractère de contrôle donc on supprime tous les espaces
+                                        # avant et après le style puisqu'il sera remplacé par le caractère de contrôle.
+                                        # Sinon il ne faudrait pas faire ce test et ne conserver que la ligne du "else:"
+                                        line = line[:block.start(0)].strip(' ') + style_start + block.group(1) + style_stop + line[block.end(0):].strip(' ')
+                                    else:
+                                        line = line[:block.start(0)] + style_start + block.group(1) + style_stop + line[block.end(0):]
 
                             if style_name == 'cite':
                                 cite_start = style_start
 
-                            pos = block.start(0) + len(block.group(1))
+                            if style_start is not None:
+                                pos = block.start(0) + len(block.group(1))
 
                         else:
                             pos = block.start(0)+1

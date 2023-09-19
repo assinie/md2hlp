@@ -41,11 +41,13 @@ These options are used to render paragraph
 ### For Emphasis styles
 These options are used to render emphasis.
 The prefix and postfix strings are separated by a comma.
+If the option is set to `None`, the text will not be rendered.
 
 Example: `Bold = ^T,\_^P` will render `**text**` as `<0x14>text<space><0x10>`
 
 + **Quote**: Prefix and postfix used for inline quote: ``inline quote``
 + **Link**: Prefix and Postfix used to display the text in brackets of a link: `[text in bracket](http://...)`
++ **Image**: Prefix and Postfix used to display the text in brackets of a image link: `![text in bracket](http://...)`
 + **bold**: Prefix and postfix for bold style: `** text **`
 + **italic**: Prefix and postfix for italic style: `* text *`
 + **strike through**: Prefix and postfix for strikethrough style: `~~ text ~~`
